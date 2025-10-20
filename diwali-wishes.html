@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>पासपोर्ट फोटो मेकर</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+    <h1 class="text-2xl font-bold text-center mb-4">पासपोर्ट साइज फोटो मेकर</h1>
+    <p class="text-center mb-4">अपनी फोटो अपलोड करें, बैकग्राउंड हटाएँ और पासपोर्ट साइज में डाउनलोड करें!</p>
+    
+    <input type="file" id="photoInput" accept="image/*" class="mb-4 w-full p-2 border rounded">
+    
+    <div class="mb-4">
+      <label for="sizeSelect" class="block text-sm font-medium">पासपोर्ट साइज चुनें:</label>
+      <select id="sizeSelect" class="w-full p-2 border rounded">
+        <option value="2x2">2x2 इंच (अमेरिका)</option>
+        <option value="35x45">35x45 मिमी (भारत/अन्य)</option>
+      </select>
+    </div>
+    
+    <div class="mb-4">
+      <label for="bgRemove" class="block text-sm font-medium">बैकग्राउंड हटाएँ:</label>
+      <input type="checkbox" id="bgRemove" class="mr-2"> हाँ, सफेद बैकग्राउंड बनाएँ
+    </div>
+    
+    <div id="bgColorDiv" class="mb-4 hidden">
+      <label for="bgColor" class="block text-sm font-medium">बैकग्राउंड रंग चुनें (हरा/नीला टेस्ट करें):</label>
+      <input type="color" id="bgColor" value="#00ff00" class="w-full p-1 border rounded">
+    </div>
+    
+    <button id="processBtn" class="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">फोटो प्रोसेस करें</button>
+    
+    <canvas id="photoCanvas" class="hidden"></canvas>
+    
+    <div id="preview" class="mt-4 hidden">
+      <h2 class="text-lg font-semibold">प्रीव्यू</h2>
+      <img id="previewImg" class="mt-2 border w-full" alt="पासपोर्ट फोटो प्रीव्यू">
+    </div>
+    
+    <a id="downloadLink" class="mt-4 inline-block w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 text-center hidden">डाउनलोड करें</a>
+    
+    <div id="errorMsg" class="mt-4 text-red-500 hidden"></div>
+  </div>
+
+  <script>
+    const photoInput = document.getElementById('photoInput');
+    const sizeSelect = document.getElementById('sizeSelect');
+    const bgRemove = document.getElementById('bgRemove');
+    const bgColorDiv = document.getElementById('bgColorDiv');
+    const bgColor = document.getElementById('bgColor');
+    const processBtn = document.getElementById('processBtn');
+    const photoCanvas = document.getElementById('photoCanvas');
+    const previewImg = document.getElementById('previewImg');
+    const downloadLink = document.getElementById('downloadLink');
+    const previewDiv = document.getElementById('preview');
+    const errorMsg = document.getElementById('errorMsg');
+    const ctx = photoCanvas.getContext('2d');
+
+    // एरर दिखाने का फंक्शन
+    function showError(msg) {
+      errorMsg.textContent = msg;
+      errorMsg.classList.remove('hidden');
+      setTimeout(() => errorMsg.classList.add('hidden'), 5000);
+    }
+
+    // चेकबॉक्स पर क्लिक से रंग सिलेक्टर दिखाएं/छिपाएं
+    bgRemove.addEventListener('change', () => {
+      bgColorDiv.classList.toggle('hidden', !bgRemove.checked);
+    });
+
+    // फोटो अपलोड
+    photoInput.addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        showError('कृपया एक वैध इमेज फाइल चुनें!');
+        return;
+      }
+      const img = new Image();
+      img.onload = function() {
+        photoCanvas.width = img.width;
+        photoCanvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        showError(''); // एरर क्लियर करें
+      };
+      img.onerror = () => showError('फोटो लोड करने में समस्या!');
+      img.src = URL.createObjectURL(file);
+    });
+
+    // हेक्स को RGB में कन्वर्ट
+    function hexToRgb(hex) {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return { r, g, b };
+    }
+
+    // बैकग्राउंड रिमूवल (संवेदनशीलता बढ़ाई)
+    function removeBackground() {
+      const imageData = ctx.getImageData(0, 0, photoCanvas.width, photoCanvas.height);
+      const data = imageData.data;
+      const selectedColor = hexToRgb(bgColor.value);
+      const threshold = 60; // कम थ्रेशोल्ड ज्यादा पिक्सल हटाने के लिए
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const diff = Math.abs(r - selectedColor.r) + Math.abs(g - selectedColor.g) + Math.abs(b - selectedColor.b);
+        if (diff < threshold) {
+          data[i] = 255;     // सफेद R
+          data[i + 1] = 255; // सफेद G
+          data[i + 2] = 255; // सफेद B
+          data[i + 3] = 255; // Alpha
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    // प्रोसेस बटन
+    processBtn.addEventListener('click', function() {
+      if (!photoInput.files[0]) {
+        showError('कृपया पहले एक फोटो अपलोड करें!');
+        return;
+      }
+      const img = new Image();
+      img.src = photoCanvas.toDataURL();
+      img.onload = function() {
+        try {
+          if (bgRemove.checked) {
+            removeBackground();
+          }
+
+          const size = sizeSelect.value;
+          let targetWidth, targetHeight;
+          if (size === '2x2') {
+            targetWidth = 600;  // 2x2 इंच @ 300 DPI
+            targetHeight = 600;
+          } else {
+            targetWidth = 413;  // 35mm @ 300 DPI
+            targetHeight = 531; // 45mm @ 300 DPI
+          }
+
+          // सेंटर क्रॉप
+          const sourceSize = Math.min(img.width, img.height);
+          const sourceX = (img.width - sourceSize) / 2;
+          const sourceY = (img.height - sourceSize) / 2;
+
+          // नया कैनवास
+          photoCanvas.width = targetWidth;
+          photoCanvas.height = targetHeight;
+          ctx.fillStyle = '#ffffff'; // सफेद बैकग्राउंड
+          ctx.fillRect(0, 0, targetWidth, targetHeight);
+          ctx.drawImage(img, sourceX, sourceY, sourceSize, sourceSize, 0, 0, targetWidth, targetHeight);
+
+          // प्रीव्यू दिखाएं
+          previewImg.src = photoCanvas.toDataURL();
+          previewDiv.classList.remove('hidden');
+
+          // डाउनलोड लिंक
+          downloadLink.href = photoCanvas.toDataURL('image/jpeg');
+          downloadLink.download = 'passport_photo.jpg';
+          downloadLink.classList.remove('hidden');
+          showError(''); // एरर क्लियर
+        } catch (e) {
+          showError('प्रोसेसिंग में त्रुटि: ' + e.message);
+        }
+      };
+    });
+  </script>
+</body>
+</html>
