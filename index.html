@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>हैप्पी दिवाली विशेस</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-orange-400 to-yellow-500 min-h-screen flex flex-col items-center justify-center p-4">
+  <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 text-center">
+    <h1 class="text-3xl font-bold mb-4 text-orange-600">🪔 हैप्पी दिवाली! 🎉</h1>
+    <p class="mb-6 text-gray-700">किसी को दिवाली की शुभकामनाएँ भेजें!</p>
+    
+    <input type="text" id="senderName" placeholder="आपका नाम" class="w-full p-3 mb-3 border rounded-lg text-center">
+    <input type="text" id="receiverName" placeholder="किसका नाम" class="w-full p-3 mb-3 border rounded-lg text-center">
+    <textarea id="message" placeholder="विशेष संदेश लिखें (वैकल्पिक)..." rows="3" class="w-full p-3 mb-3 border rounded-lg text-center resize-none"></textarea>
+    
+    <button id="generateBtn" class="w-full bg-orange-500 text-white p-3 rounded-lg hover:bg-orange-600 font-semibold">विश बनाएँ और शेयर करें</button>
+    
+    <div id="wishCard" class="mt-6 hidden bg-gradient-to-r from-red-500 to-orange-500 rounded-lg p-6 text-white">
+      <h2 class="text-2xl font-bold mb-2">🪔 दिवाली की हार्दिक शुभकामनाएँ! 🎉</h2>
+      <p id="cardSender" class="mb-1"></p>
+      <p id="cardReceiver" class="mb-2"></p>
+      <p id="cardMessage" class="mb-4 italic"></p>
+      <p class="text-sm opacity-90">दिवाली का त्योहार खुशियों और समृद्धि लाए!</p>
+      <button id="shareBtn" class="mt-4 w-full bg-white text-orange-500 p-2 rounded font-semibold">शेयर करें</button>
+    </div>
+  </div>
+
+  <script>
+    const generateBtn = document.getElementById('generateBtn');
+    const shareBtn = document.getElementById('shareBtn');
+    const senderName = document.getElementById('senderName');
+    const receiverName = document.getElementById('receiverName');
+    const message = document.getElementById('message');
+    const wishCard = document.getElementById('wishCard');
+    const cardSender = document.getElementById('cardSender');
+    const cardReceiver = document.getElementById('cardReceiver');
+    const cardMessage = document.getElementById('cardMessage');
+
+    generateBtn.addEventListener('click', () => {
+      const sender = senderName.value || 'मित्र';
+      const receiver = receiverName.value || 'प्रिय मित्र';
+      const msg = message.value || 'दिवाली की अनंत शुभकामनाएँ! आपका जीवन प्रकाशमय हो।';
+
+      cardSender.textContent = `प्रेषक: ${sender}`;
+      cardReceiver.textContent = `प्राप्तकर्ता: ${receiver}`;
+      cardMessage.textContent = msg;
+
+      wishCard.classList.remove('hidden');
+      wishCard.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    shareBtn.addEventListener('click', () => {
+      const text = `🪔 हैप्पी दिवाली! ${cardSender.textContent} से ${cardReceiver.textContent}: "${cardMessage.textContent}" 🎉`;
+      if (navigator.share) {
+        navigator.share({ title: 'दिवाली विश', text: text });
+      } else {
+        navigator.clipboard.writeText(text).then(() => alert('विश कॉपी हो गया! व्हाट्सएप/फेसबुक पर पेस्ट करें।'));
+      }
+    });
+  </script>
+</body>
+</html>
